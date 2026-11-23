@@ -1,0 +1,37 @@
+# Vault in DEV MODE: in-memory, auto-unsealed, root token "root".
+# Fine for a laptop lab, never for anything real. See docs/adr/0003-vault-dev-mode.md.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: hashicorp
+  namespace: vault
+spec:
+  interval: 1h
+  url: https://helm.releases.hashicorp.com
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vault
+  namespace: vault
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: vault
+      version: "0.x"
+      sourceRef:
+        kind: HelmRepository
+        name: hashicorp
+  values:
+    injector:
+      enabled: false        # we use External Secrets Operator instead of sidecars
+    server:
+      dev:
+        enabled: true
+        devRootToken: root
+      resources:
+        requests: { cpu: 50m, memory: 128Mi }
+        limits: { memory: 256Mi }
+    ui:
+      enabled: true

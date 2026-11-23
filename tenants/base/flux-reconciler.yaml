@@ -1,0 +1,24 @@
+# Flux impersonates this SA when applying the tenant's apps. It can manage
+# almost anything inside its own namespace and nothing outside it.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flux-reconciler
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: flux-reconciler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tenant-deployer
+subjects:
+  - kind: ServiceAccount
+    name: flux-reconciler
+---
+# Reader SA used by the tenant's SecretStore to log in to Vault.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-reader

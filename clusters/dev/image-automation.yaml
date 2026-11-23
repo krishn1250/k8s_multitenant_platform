@@ -1,0 +1,47 @@
+# New tags pushed to GHCR by CI are picked up automatically in dev and committed
+# back to Git, so the cluster state is always what Git says it is.
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: orders-api
+  namespace: flux-system
+spec:
+  image: ghcr.io/YOUR_GITHUB_USER/orders-api
+  interval: 5m
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: orders-api
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: orders-api
+  policy:
+    semver:
+      range: ">=0.1.0"
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: orders-api-dev
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        name: fluxcdbot
+        email: fluxcdbot@users.noreply.github.com
+      messageTemplate: "chore(dev): update orders-api image"
+    push:
+      branch: main
+  update:
+    path: ./apps/orders-api/k8s/overlays/dev
+    strategy: Setters

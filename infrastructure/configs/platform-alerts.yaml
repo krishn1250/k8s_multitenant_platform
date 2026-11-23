@@ -1,0 +1,30 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: platform-alerts
+  namespace: monitoring
+spec:
+  groups:
+    - name: platform.secrets
+      rules:
+        - alert: ExternalSecretNotSynced
+          expr: max by (namespace, name) (externalsecret_status_condition{condition="Ready", status="False"}) == 1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "ExternalSecret {{ $labels.namespace }}/{{ $labels.name }} is not syncing"
+            runbook_url: "https://github.com/YOUR_GITHUB_USER/k8s-multitenant-platform/blob/main/docs/runbooks/externalsecret-not-synced.md"
+    - name: platform.workloads
+      rules:
+        - alert: TenantPodNotReady
+          expr: |
+            sum by (namespace, pod) (
+              kube_pod_status_ready{condition="false"}
+              * on (namespace) group_left kube_namespace_labels{label_platform_io_tenant="true"}
+            ) > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} not ready for 10m"

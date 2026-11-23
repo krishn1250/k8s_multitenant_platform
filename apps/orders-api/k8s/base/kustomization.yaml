@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - pairs:
+      app.kubernetes.io/name: orders-api
+      app.kubernetes.io/part-of: k8s-multitenant-platform
+    includeSelectors: false
+resources:
+  - deployment.yaml
+  - service.yaml
+  - pdb.yaml
+  - httproute.yaml
+  - externalsecret.yaml
+  - servicemonitor.yaml

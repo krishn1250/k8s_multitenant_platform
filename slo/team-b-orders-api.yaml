@@ -1,0 +1,63 @@
+# SLOs for team-b/orders-api, 30-day window.
+#   availability: 99.5% of requests are not 5xx      -> ~3.6h of budget / 30d
+#   latency:      99% of requests finish under 300ms
+# Sloth generates recording rules (slo:sli_error:ratio_rate5m ... 30d) and
+# multi-window burn-rate alerts: page on fast burn (14.4x over 1h & 5m),
+# ticket on slow burn (6x over 6h & 30m, 3x over 1d & 2h, 1x over 3d & 6h).
+apiVersion: sloth.slok.dev/v1
+kind: PrometheusServiceLevel
+metadata:
+  name: team-b-orders-api
+  namespace: monitoring
+spec:
+  service: orders-api
+  labels:
+    tenant: team-b
+    owner: team-b
+  slos:
+    - name: requests-availability
+      objective: 99.5
+      description: "Share of orders-api requests that do not fail with a 5xx."
+      sli:
+        events:
+          errorQuery: sum(rate(http_requests_total{namespace="team-b", job="orders-api", status=~"5.."}[{{.window}}]))
+          totalQuery: sum(rate(http_requests_total{namespace="team-b", job="orders-api"}[{{.window}}]))
+      alerting:
+        name: OrdersApiHighErrorBudgetBurn
+        labels:
+          tenant: team-b
+        annotations:
+          summary: "team-b orders-api is burning its availability error budget"
+          runbook_url: "https://github.com/YOUR_GITHUB_USER/k8s-multitenant-platform/blob/main/docs/runbooks/error-budget-burn.md"
+        pageAlert:
+          labels:
+            severity: page
+        ticketAlert:
+          labels:
+            severity: ticket
+
+    - name: requests-latency
+      objective: 99
+      description: "Share of orders-api requests served in under 300ms."
+      sli:
+        events:
+          errorQuery: |
+            (
+              sum(rate(http_request_duration_seconds_count{namespace="team-b", job="orders-api"}[{{.window}}]))
+              -
+              sum(rate(http_request_duration_seconds_bucket{namespace="team-b", job="orders-api", le="0.3"}[{{.window}}]))
+            )
+          totalQuery: sum(rate(http_request_duration_seconds_count{namespace="team-b", job="orders-api"}[{{.window}}]))
+      alerting:
+        name: OrdersApiHighLatencyBudgetBurn
+        labels:
+          tenant: team-b
+        annotations:
+          summary: "team-b orders-api is burning its latency error budget"
+          runbook_url: "https://github.com/YOUR_GITHUB_USER/k8s-multitenant-platform/blob/main/docs/runbooks/error-budget-burn.md"
+        pageAlert:
+          labels:
+            severity: page
+        ticketAlert:
+          labels:
+            severity: ticket

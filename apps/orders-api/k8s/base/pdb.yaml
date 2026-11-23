@@ -1,0 +1,10 @@
+# Node drains and cluster upgrades can never take all replicas at once.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: orders-api
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: orders-api

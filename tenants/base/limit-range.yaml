@@ -1,0 +1,15 @@
+# Defaults for containers that forget to set requests/limits (quota requires them).
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: tenant-defaults
+spec:
+  limits:
+    - type: Container
+      default:
+        memory: 256Mi
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        memory: 1Gi

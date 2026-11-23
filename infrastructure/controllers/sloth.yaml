@@ -1,0 +1,31 @@
+# Sloth turns a short SLO spec (slo/*.yaml) into multi-window, multi-burn-rate
+# recording rules and alerts (Google SRE workbook, chapter 5).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: sloth
+  namespace: monitoring
+spec:
+  interval: 1h
+  url: https://slok.github.io/sloth
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sloth
+  namespace: monitoring
+spec:
+  dependsOn:
+    - name: kube-prometheus-stack
+  interval: 30m
+  chart:
+    spec:
+      chart: sloth
+      version: "*"
+      sourceRef:
+        kind: HelmRepository
+        name: sloth
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace

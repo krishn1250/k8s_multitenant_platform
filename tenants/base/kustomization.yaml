@@ -1,0 +1,10 @@
+# Guardrails every tenant gets. A tenant folder adds only what is unique to it
+# (namespace, owning group, Vault role).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - flux-reconciler.yaml
+  - network-policies.yaml
+  - resource-quota.yaml
+  - limit-range.yaml
+  - secret-store.yaml

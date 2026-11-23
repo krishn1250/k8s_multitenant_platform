@@ -1,0 +1,24 @@
+# How team-a's apps get deployed. Lives in the tenant namespace and impersonates
+# the tenant's flux-reconciler SA, so anything in the app manifests that tries
+# to create cluster-scoped objects or touch another namespace is rejected by
+# the API server. ${ENV} comes from clusters/<env>/tenants.yaml.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: orders-api
+spec:
+  serviceAccountName: flux-reconciler
+  targetNamespace: team-a
+  interval: 5m
+  retryInterval: 1m
+  timeout: 3m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  path: ./apps/orders-api/k8s/overlays/${ENV}
+  prune: true
+  wait: true
+  postBuild:
+    substitute:
+      TENANT: team-a

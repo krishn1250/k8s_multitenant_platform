@@ -1,0 +1,13 @@
+# Noisy-neighbour protection: one tenant cannot eat the whole cluster.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: tenant-quota
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 2Gi
+    limits.memory: 4Gi
+    pods: "20"
+    services.loadbalancers: "0"
+    services.nodeports: "0"

@@ -1,0 +1,42 @@
+# What a tenant's Flux identity may do inside its namespace: the same rules as
+# the built-in "edit" role, plus the CRDs tenants need. "edit" cannot create
+# Roles/RoleBindings, so a tenant cannot grant itself more access.
+# Trade-off (see ADR 0002): "edit" can create NetworkPolicies. Allows are
+# additive, so a tenant could widen its own ingress; a stricter platform would
+# replace the aggregation with an explicit rule list.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tenant-deployer
+aggregationRule:
+  clusterRoleSelectors:
+    - matchLabels:
+        rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    - matchLabels:
+        rbac.authorization.k8s.io/aggregate-to-view: "true"
+    - matchLabels:
+        platform.io/aggregate-to-tenant-deployer: "true"
+rules: []
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tenant-deployer-crds
+  labels:
+    platform.io/aggregate-to-tenant-deployer: "true"
+rules:
+  - apiGroups: [gateway.networking.k8s.io]
+    resources: [httproutes]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [external-secrets.io]
+    resources: [externalsecrets]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [monitoring.coreos.com]
+    resources: [servicemonitors]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [policy]
+    resources: [poddisruptionbudgets]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [autoscaling]
+    resources: [horizontalpodautoscalers]
+    verbs: [get, list, watch, create, update, patch, delete]

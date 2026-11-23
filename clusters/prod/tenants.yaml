@@ -1,0 +1,23 @@
+# Platform-owned: namespaces, RBAC, guardrails, and each tenant's own Flux
+# Kustomization (tenants/<team>/sync.yaml). Applied with Flux's cluster-admin
+# identity because tenants must not be able to change these.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: tenants
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: infra-configs
+  interval: 10m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./tenants
+  prune: true
+  # Not waiting on health: the tenant app Kustomizations created here report
+  # their own status, and a broken tenant app must not block other tenants.
+  wait: false
+  postBuild:
+    substitute:
+      ENV: prod

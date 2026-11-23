@@ -1,0 +1,33 @@
+# Gateway API implementation. Installs the Gateway API CRDs + Envoy Gateway controller.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: envoy-gateway
+  namespace: envoy-gateway-system
+spec:
+  type: oci
+  interval: 1h
+  url: oci://docker.io/envoyproxy
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: envoy-gateway
+  namespace: envoy-gateway-system
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: gateway-helm
+      version: "1.x"   # pin an exact version once you have tested one
+      sourceRef:
+        kind: HelmRepository
+        name: envoy-gateway
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3

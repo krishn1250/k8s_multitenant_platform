@@ -1,0 +1,76 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: prometheus-community
+  namespace: monitoring
+spec:
+  interval: 1h
+  url: https://prometheus-community.github.io/helm-charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kube-prometheus-stack
+  namespace: monitoring
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      version: "*"   # pin after first successful install
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+  values:
+    # kind control-plane components are not reachable for scraping; silence the noise.
+    kubeEtcd: { enabled: false }
+    kubeControllerManager: { enabled: false }
+    kubeScheduler: { enabled: false }
+    kubeProxy: { enabled: false }
+
+    prometheus:
+      prometheusSpec:
+        retention: 3d
+        scrapeInterval: 15s
+        # Pick up ServiceMonitors/PrometheusRules from every namespace,
+        # not only ones labelled with this Helm release.
+        serviceMonitorSelectorNilUsesHelmValues: false
+        podMonitorSelectorNilUsesHelmValues: false
+        ruleSelectorNilUsesHelmValues: false
+        resources:
+          requests: { cpu: 200m, memory: 512Mi }
+          limits: { memory: 1Gi }
+
+    alertmanager:
+      config:
+        route:
+          receiver: "null"
+          group_by: ["alertname", "namespace", "sloth_service"]
+          routes:
+            - receiver: "null"
+              matchers: ['alertname = "Watchdog"']
+        receivers:
+          - name: "null"
+        # Swap "null" for a Slack/Teams/webhook receiver to get real pages.
+
+    kube-state-metrics:
+      # Expose the tenant label so alerts can be scoped to tenant namespaces.
+      metricLabelsAllowlist:
+        - namespaces=[platform.io/tenant]
+
+    grafana:
+      adminPassword: admin   # local lab only; use an existingSecret anywhere else
+      defaultDashboardsTimezone: browser
+      sidecar:
+        dashboards:
+          enabled: true
+          label: grafana_dashboard
+          labelValue: "1"
+          searchNamespace: ALL
